@@ -14,7 +14,19 @@ app.get('/', function (req, res) {
 
 // GET /todos
 app.get('/todos', function (req, res) {
-	res.json(todos);
+	var queryParams = req.query;
+	var filteredTodos = todos;
+
+	// if has property & completed === 'true'
+	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
+		// fileredTodos = _.where(fileredTodos, ?)
+		filteredTodos = _.where(filteredTodos, {completed: true}); 
+			
+	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
+		// else if has prop & completed if 'false'
+		filteredTodos = _.where(filteredTodos, {completed: false});
+	}
+	res.json(filteredTodos);
 });
 
 // GET /todos/:id
@@ -99,7 +111,7 @@ app.put('/todos/:id', function (req, res) {
 		return res.status(400).send();
 	}
 
-	// Update the todo item
+	// Update the todo item & return it
 	_.extend(matchedTodo, validAttributes);
 	res.json(matchedTodo);
 });
