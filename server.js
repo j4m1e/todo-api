@@ -229,6 +229,27 @@ app.put('/todos/:id', function(req, res) {
 	// res.json(matchedTodo);
 });
 
+
+// POST /users
+app.post('/users', function (req, res) {
+	// use _.pick to only pick email and password
+	var body = _.pick(req.body, 'email', 'password');
+
+	if (!_.isString(body.email) || body.email.trim().length === 0 || !_.isString(body.password) || body.password.trim().length === 0) {
+		return res.status(400).send();
+	}
+	email = body.email.trim();
+	password = body.password.trim();
+	// call create on db.todo db.todo.create
+	db.user.create(body).then(function(user) {
+		// respond with 200 and user - toJSON
+		res.json(user.toJSON());
+	}, function(e) {
+		// res.status(400).json(e)
+		res.status(400).json(e);
+	});
+});
+
 db.sequelize.sync().then(function() {
 	app.listen(PORT, function() {
 		console.log('Express listening on port ' + PORT + '!');
