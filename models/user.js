@@ -3,7 +3,7 @@ var _ = require('underscore');
 var cryptojs = require('crypto-js');
 var jwt = require('jsonwebtoken');
 
-module.exports = function (sequelize, DataTypes) {
+module.exports = function(sequelize, DataTypes) {
 	var user = sequelize.define('user', {
 		email: {
 			type: DataTypes.STRING,
@@ -25,7 +25,7 @@ module.exports = function (sequelize, DataTypes) {
 			validate: {
 				len: [7, 100]
 			},
-			set: function (value) {
+			set: function(value) {
 				var salt = bcrypt.genSaltSync(10);
 				var hashedPassword = bcrypt.hashSync(value, salt);
 
@@ -36,7 +36,7 @@ module.exports = function (sequelize, DataTypes) {
 		}
 	}, {
 		hooks: {
-			beforeValidate: function (user, options) {
+			beforeValidate: function(user, options) {
 				//user.email if (typeof string) set user.email.lowercase
 				if (typeof user.email === 'string') {
 					user.email = user.email.toLowerCase();
@@ -44,9 +44,9 @@ module.exports = function (sequelize, DataTypes) {
 			}
 		},
 		classMethods: {
-			authenticate: function (body) {
-				return new Promise(function (resolve, reject) {
-						// validation that there is a string email and password
+			authenticate: function(body) {
+				return new Promise(function(resolve, reject) {
+					// validation that there is a string email and password
 					if (typeof body.email !== 'string' || typeof body.password !== 'string') {
 						return reject();
 					}
@@ -63,26 +63,53 @@ module.exports = function (sequelize, DataTypes) {
 							// 401 is authertication was possible but failed
 							return reject();
 						}
-						resolve(user); 
+						resolve(user);
 
 					}, function(e) {
 						reject();
 					});
 				});
+			},
+			findByToken: function(token) {
+				return new Promise(function(resolve, reject) {
+					try {
+						var decodedJWT = jwt.verify(token, 'qwerty098');
+						var bytes = cryptojs.AES.decrypt(decodedJWT.token, 'abc123!@#!');
+						var tokenData = JSON.parse(bytes.toString(cryptojs.enc.Utf8));
+
+						user.findById(tokenData.id).then(function (user) {
+							if (user) {
+								resolve(user);
+							} else {
+								// id does not exist
+								reject();
+							}
+						}, function (e) {
+							// maybe the database isnt properly connected etc.
+							reject();
+						});
+					} catch (e) {
+						// token not in a valid format
+						reject();
+					}
+				});
 			}
 		},
 		instanceMethods: {
-			toPublicJSON: function () {
+			toPublicJSON: function() {
 				var json = this.toJSON();
 				return _.pick(json, 'id', 'email', 'createdAt', 'updatedAt');
 			},
-			generateToken: function (type) {
+			generateToken: function(type) {
 				if (!_.isString(type)) {
 					return undefined;
 				}
 
 				try {
-					var stringData = JSON.stringify({id: this.get('id'), type: type});
+					var stringData = JSON.stringify({
+						id: this.get('id'),
+						type: type
+					});
 					var encryptedData = cryptojs.AES.encrypt(stringData, 'abc123!@#!').toString();
 					var token = jwt.sign({
 						token: encryptedData
