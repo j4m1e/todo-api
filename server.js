@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
 var db = require('./db.js');
+var bcrypt = require('bcryptjs');
 
 var app = express();
 var PORT = process.env.PORT || 3000;
@@ -231,7 +232,7 @@ app.put('/todos/:id', function(req, res) {
 
 
 // POST /users
-app.post('/users', function (req, res) {
+app.post('/users', function(req, res) {
 	// use _.pick to only pick email and password
 	var body = _.pick(req.body, 'email', 'password');
 
@@ -247,6 +248,21 @@ app.post('/users', function (req, res) {
 	}, function(e) {
 		// res.status(400).json(e)
 		res.status(400).json(e);
+	});
+});
+
+// POST /users/login
+app.post('/users/login', function(req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+	// class method
+
+	db.user.authenticate(body).then(function (user) {
+		// all went well
+		res.json(user.toPublicJSON());
+	}, function () {
+		// went bad - dont want to expose why the authentication worked
+		res.status(401).send();
 	});
 });
 
