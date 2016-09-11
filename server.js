@@ -259,7 +259,12 @@ app.post('/users/login', function(req, res) {
 
 	db.user.authenticate(body).then(function (user) {
 		// all went well
-		res.json(user.toPublicJSON());
+		var token = user.generateToken('authentication');
+		if (token) {
+			res.header('Auth', token).json(user.toPublicJSON());
+		} else {
+			res.status(401).send();
+		}
 	}, function () {
 		// went bad - dont want to expose why the authentication worked
 		res.status(401).send();
